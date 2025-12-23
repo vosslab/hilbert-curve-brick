@@ -1,364 +1,103 @@
-## pythonlib
-import os
-import subprocess
-## PIL
-from PIL import Image
-from PIL import ImageDraw
-## numpy
+#!/usr/bin/env python3
+"""
+Minimal image helpers for writing PNG slices.
+"""
+
+# Standard Library
+
+# PIP3 modules
 import numpy
-from numpy import ma
-## appion
-from appionlib import apDisplay
-from appionlib import apFile
-from appionlib.apImage import imagenorm
-## pyami
-from pyami import mrc, imagefun, spider
+import PIL.Image
 
-####
-# This is a low-level file with NO database connections
-# Please keep it this way
-####
 
-#===============================
-def convertPostscriptToPng(psfile, pngfile, size=1024):
+#============================================
+def _normalize_array(numer: numpy.ndarray, normalize: bool) -> numpy.ndarray:
+	"""
+	Normalize or scale an array to 0-255.
 
-	### better pstopnm pre-step
-	pstopnmcmd = "pstopnm -xsize=2000 -ysize=2000 -xborder=0 -yborder=0 -portrait "+psfile
-	proc = subprocess.Popen(pstopnmcmd, shell=True)
-	proc.wait()
+	Args:
+		numer: Input array.
+		normalize: Whether to normalize the data range.
 
-	### direct conversion
-	ppmfile = os.path.splitext(psfile)[0]+"001.ppm"
-	if os.path.isfile(ppmfile):
-		imagemagickcmd = ("convert -colorspace Gray -trim -resize "
-			+str(size)+"x"+str(size)+" "+ppmfile+" "+pngfile)
-	else:
-		ppmfile = psfile+"001.ppm"
-		if os.path.isfile(ppmfile):
-			imagemagickcmd = ("convert -colorspace Gray -trim -resize "
-				+str(size)+"x"+str(size)+" "+ppmfile+" "+pngfile)
+	Returns:
+		numpy.ndarray: uint8 array in 0-255 range.
+	"""
+	if normalize:
+		min_value = float(numpy.min(numer))
+		max_value = float(numpy.max(numer))
+		if max_value == min_value:
+			scaled = numpy.zeros(numer.shape, dtype=numpy.float32)
 		else:
-			imagemagickcmd = ("convert -colorspace Gray -trim -resize "
-				+str(size)+"x"+str(size)+" "+psfile+" "+pngfile)
-	proc = subprocess.Popen(imagemagickcmd, shell=True)
-	proc.wait()
-
-	if os.path.isfile(ppmfile):
-		apFile.removeFile(ppmfile)
-
-	if not os.path.isfile(pngfile):
-		apDisplay.printWarning("Postscript image conversion failed")
-
-#=========================
-def imageToArray(im, convertType='uint8', dtype=None, msg=True):
-	"""
-	Convert PIL image to numpy array
-	copied and modified from http://mail.python.org/pipermail/image-sig/2005-September/003554.html
-	"""
-	if im.mode == "L":
-		a = numpy.fromstring(im.tobytes(), numpy.uint8)
-		a = numpy.reshape(a, (im.size[1], im.size[0]))
-		#a.shape = (im.size[1], im.size[0], 1)  # alternate way
-	elif (im.mode=='RGB'):
-		apDisplay.printMsg("reading RGB and converting to L")
-		grey = im.convert('L')
-		a = numpy.fromstring(grey.tobytes(), numpy.uint8)
-		a = numpy.reshape(a, (grey.size[1], grey.size[0]))
-	elif (im.mode=='RGBA'):
-		apDisplay.printMsg("reading RGBA and converting to L")
-		grey = im.convert('L')
-		a = numpy.fromstring(grey.tobytes(), numpy.uint8)
-		a = numpy.reshape(a, (grey.size[1], grey.size[0]))
-	elif (im.mode=='LA'):
-		apDisplay.printMsg("reading LA and converting to L")
-		grey = im.convert('L')
-		a = numpy.fromstring(grey.tobytes(), numpy.uint8)
-		a = numpy.reshape(a, (grey.size[1], grey.size[0]))
+			scaled = (numer - min_value) / (max_value - min_value)
+		scaled = scaled * 255.0
 	else:
-		raise ValueError(im.mode+" mode not considered")
+		scaled = numer * 255.0
 
-	if convertType == 'float32':
-		a = a.astype(numpy.float32)
-	if dtype is not None:
-		a = a.astype(dtype)
+	clipped = numpy.clip(scaled, 0, 255)
+	result = clipped.astype(numpy.uint8)
+	return result
 
-	return a
 
-#=========================
-def _arrayToImage(a):
+#============================================
+def _array_to_image(numer: numpy.ndarray) -> "PIL.Image.Image":
 	"""
-	Converts array object (numpy) to image object (PIL).
-	"""
-	if hasattr(Image,'frombytes'):
-		fromstring_func = getattr(Image, 'frombytes')
-	else:
-		fromstring_func = getattr(Image, 'fromstring')
+	Convert a numpy array to a PIL image.
 
-	h, w = a.shape[:2]
-	boolean = numpy.bool_
-	int32 = numpy.int32
-	uint32 = numpy.uint32
-	float32 = numpy.float32
-	float64 = numpy.float64
+	Args:
+		numer: Input array.
 
-	if a.dtype==boolean or a.dtype==int32 or a.dtype==uint32 or a.dtype==float32 or a.dtype==float64:
-		a = a.astype(numpy.uint8) # convert to 8-bit
+	Returns:
+		PIL.Image.Image: PIL image.
+	"""
+	shape_length = len(numer.shape)
+	if shape_length == 2:
+		height, width = numer.shape
+		image = PIL.Image.frombytes("L", (width, height), numer.tobytes())
+		return image
+	if shape_length == 3 and numer.shape[2] == 3:
+		height, width, _ = numer.shape
+		image = PIL.Image.frombytes("RGB", (width, height), numer.tobytes())
+		return image
+	raise ValueError("Unsupported image array shape")
 
-	if len(a.shape)==3:
-		if a.shape[2]==3:  # a.shape == (y, x, 3)
-			r = fromstring_func("L", (w, h), a[:,:,0].tobytes())
-			g = fromstring_func("L", (w, h), a[:,:,1].tobytes())
-			b = fromstring_func("L", (w, h), a[:,:,2].tobytes())
-			return Image.merge("RGB", (r,g,b))
-		elif a.shape[2]==1:  # a.shape == (y, x, 1)
-			return fromstring_func("L", (w, h), a.tobytes())
-	elif len(a.shape)==2:  # a.shape == (y, x)
-		return fromstring_func("L", (w, h), a.tobytes())
-	else:
-		raise ValueError("unsupported image mode")
 
-#=========================
-def arrayToImage(numer, normalize=True, stdevLimit=3.0):
+#============================================
+def arrayToPng(
+		numer: numpy.ndarray,
+		filename: str,
+		normalize: bool = True,
+		msg: bool = True
+	) -> None:
 	"""
-	takes a numpy and writes a JPEG
-	best for micrographs and photographs
-	"""
-	if normalize:
-		numer = imagenorm.maxNormalizeImage(numer, stdevLimit)
-	else:
-		numer = numer*255
-	image = _arrayToImage(numer)
-	return image
+	Write a numpy array to a PNG file.
 
-#=========================
-def mrcToArray(filename, msg=True):
+	Args:
+		numer: Input array.
+		filename: Output path.
+		normalize: Normalize array before saving.
+		msg: Print a status line.
 	"""
-	takes a numpy and writes a Mrc
-	"""
-	numer = mrc.read(filename)
-	if msg is True:
-		apDisplay.printMsg("reading MRC: "+apDisplay.short(filename)+\
-			" size:"+str(numer.shape)+" dtype:"+str(numer.dtype))
-	return numer
-
-#=========================
-def arrayToMrc(numer, filename, msg=True):
-	"""
-	takes a numpy and writes a Mrc
-	"""
-	#numer = numpy.asarray(numer, dtype=numpy.float32)
-	if msg is True:
-		apDisplay.printMsg("writing MRC: "+apDisplay.short(filename)+\
-			" size:"+str(numer.shape)+" dtype:"+str(numer.dtype))
-	mrc.write(numer, filename)
-	return
-
-#=========================
-def spiderToArray(filename, msg=True):
-	"""
-	takes a numpy and writes a SPIDER image
-	"""
-	numer = spider.read(filename)
-	if msg is True:
-		apDisplay.printMsg("reading SPIDER image: "+apDisplay.short(filename)+\
-			" size:"+str(numer.shape)+" dtype:"+str(numer.dtype))
-	return numer
-
-#=========================
-def arrayToSpider(numer, filename, msg=True):
-	"""
-	takes a numpy and writes a SPIDER imag
-	"""
-	#numer = numpy.asarray(numer, dtype=numpy.float32)
-	if msg is True:
-		apDisplay.printMsg("writing SPIDER image: "+apDisplay.short(filename)+\
-			" size:"+str(numer.shape)+" dtype:"+str(numer.dtype))
-	spider.write(numer, filename)
-	return
-
-#=========================
-def arrayToJpeg(numer, filename, normalize=True, msg=True, quality=85):
-	"""
-	takes a numpy and writes a JPEG
-	best for micrographs and photographs
-	"""
-	if normalize:
-		numer = imagenorm.maxNormalizeImage(numer)
-	else:
-		numer = numer*255
-	image = _arrayToImage(numer)
-	if msg is True:
-		apDisplay.printMsg("writing JPEG: "+apDisplay.short(filename))
-	image.save(filename, "JPEG", quality=quality)
-	return
-
-#=========================
-def arrayToPng(numer, filename, normalize=True, msg=True):
-	"""
-	takes a numpy and writes a PNG
-	best for masks and line art
-	"""
-	if normalize:
-		numer = imagenorm.maxNormalizeImage(numer)
-	else:
-		numer = numer*255
-	image = _arrayToImage(numer)
-	if msg is True:
-		apDisplay.printMsg("writing PNG: "+apDisplay.short(filename))
+	normalized = _normalize_array(numer, normalize)
+	image = _array_to_image(normalized)
+	if msg:
+		print(f"writing PNG: {filename}")
 	image.save(filename, "PNG")
-	return
 
-#=========================
-def arrayMaskToPng(numer, filename, msg=True):
+
+#============================================
+def array_to_png(
+		numer: numpy.ndarray,
+		filename: str,
+		normalize: bool = True,
+		msg: bool = True
+	) -> None:
 	"""
-	Until PIL can read alpha channel again, the mask is on the main channel
-	as 255
+	Snake-case wrapper for arrayToPng.
+
+	Args:
+		numer: Input array.
+		filename: Output path.
+		normalize: Normalize array before saving.
+		msg: Print a status line.
 	"""
-	arrayToPng(numer, filename, True, True)
-	return
-
-#=========================
-def arrayMaskToPngAlpha(numer,filename, msg=True):
-	"""
-	Create PNG file of a binary mask (array with only 0 and 1)
-	that uses the values in the alpha channel for transparency
-	"""
-	alpha=int(0.4*255)
-	numera = numer*alpha
-	numerones=numpy.ones(numpy.shape(numer))*255
-	imagedummy = _arrayToImage(numerones)
-
-	alphachannel = _arrayToImage(numera)
-
-	image = imagedummy.convert('RGBA')
-	image.putalpha(alphachannel)
-	if msg is True:
-		apDisplay.printMsg("writing alpha channel PNG mask: "+apDisplay.short(filename))
-	image.save(filename, "PNG")
-	return
-
-#=========================
-def PngAlphaToBinarryArray(filename):
-	RGBAarray = readPNG(filename)
-	print(RGBAarray.shape)
-	alphaarray = RGBAarray[:,:,3]
-	masked_alphaarray = ma.masked_greater_equal(alphaarray,50)
-	bmask = masked_alphaarray.mask
-	return bmask
-
-#=========================
-def PngToBinarryArray(filename):
-	RGBAarray = readPNG(filename)
-	alphaarray = RGBAarray[:,:]
-	masked_alphaarray = ma.masked_greater_equal(alphaarray,50)
-	bmask = masked_alphaarray.mask
-	return bmask
-
-#=========================
-def arrayToJpegPlusPeak(numer, outfile, peak=None, normalize=True):
-	"""
-	takes a numpy and writes a JPEG
-	best for micrographs and photographs
-	"""
-	if normalize:
-		numer = imagenorm.maxNormalizeImage(numer)
-	else:
-		numer = numer*255
-	image = _arrayToImage(numer)
-	image = image.convert("RGB")
-
-	if peak != None:
-		draw = ImageDraw.Draw(image)
-		peak2 = numpy.asarray(peak)
-		for i in range(2):
-			if peak[i] < 0:
-				peak2[i] = (numer.shape)[i] + peak[i]
-			elif peak[i] > (numer.shape)[i]:
-				peak2[i] = peak[i] - (numer.shape)[i]
-		drawPeak(peak2, draw, numer.shape)
-
-	print(" ... writing JPEG: ",outfile)
-	image.save(outfile, "JPEG", quality=85)
-
-	return
-
-#=========================
-def drawPeak(peak, draw, imshape, rad=10.0, color0="red", numshapes=4, shape="circle"):
-	"""
-	Draws a shape around a peak
-	"""
-
-	mycolors = {
-		"red":		"#ff4040",
-		"green":	"#3df23d",
-		"blue":		"#3d3df2",
-		"yellow":	"#f2f23d",
-		"cyan":		"#3df2f2",
-		"magenta":	"#f23df2",
-		"orange":	"#f2973d",
-		"teal":		"#3df297",
-		"purple":	"#973df2",
-		"lime":		"#97f23d",
-		"skyblue":	"#3d97f2",
-		"pink":		"#f23d97",
-	}
-	row1=float(peak[1])
-	col1=float(peak[0])
-	#Draw (numcircs) circles of size (circmult*pixrad)
-	for count in range(numshapes):
-		trad = rad + count
-		coord=(row1-trad, col1-trad, row1+trad, col1+trad)
-		if(shape == "square"):
-			draw.rectangle(coord,outline=mycolors[color0])
-		else:
-			draw.ellipse(coord,outline=mycolors[color0])
-	updown    = (0, imshape[1]/2, imshape[0], imshape[1]/2)
-	leftright = (imshape[0]/2, 0, imshape[0]/2, imshape[1])
-	draw.line(updown,   fill=mycolors['blue'])
-	draw.line(leftright,fill=mycolors['blue'])
-	return
-
-#=========================
-def readMRC(filename):
-	return mrc.read(filename)
-
-#=========================
-def readJPG(filename):
-	i = Image.open(filename)
-	i.load()
-	i = imageToArray(i)
-	return i
-
-#=========================
-def readPNG(filename):
-	i = Image.open(filename)
-	i.load()
-	i = imageToArray(i)
-	return i
-
-#=========================
-def writeMrcStack(path, stackname, mrc_files, binning=1):
-	apDisplay.printMsg("Writing MRC stack file... ")
-	stackname = os.path.join(path, stackname)
-	im = mrc.read(mrc_files[0])
-	image = imagefun.bin(im, binning)
-	mrc.write(image,stackname)
-	del mrc_files[0]
-	for mrcfile in mrc_files:
-		im = mrc.read(mrcfile)
-		image = imagefun.bin(im, binning)
-		mrc.append(image, stackname)
-
-#=========================
-def shiftMRCStartToZero(filename):
-	h = mrc.readHeaderFromFile(filename)
-	if h['nxstart'] != 0 or h['nystart'] !=0:
-		apDisplay.printMsg("Shifting image header start to zero on %s" %(os.path.basename(filename)))
-		a = mrc.read(filename)
-		mrc.write(a, filename)
-
-####
-# This is a low-level file with NO database connections
-# Please keep it this way
-####
-
+	arrayToPng(numer, filename, normalize=normalize, msg=msg)
