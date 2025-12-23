@@ -7,12 +7,16 @@ Generate 3D Hilbert curve slices for LEGO-compatible brick builds.
 - Run: `python3 hilbert-curve-brick.py -d 8 -o output`
 
 ## Script
-- `hilbert-curve-brick.py`: builds a 3D Hilbert curve volume and writes PNG slices.
+- `hilbert-curve-brick.py`: builds a 3D Hilbert curve volume, PNG slices, and LDraw output.
+- `hilbert_curve_brick/`: submodules for CLI parsing, Hilbert math, volume helpers,
+  and LDraw export.
 
 ## Output
 - PNG slices saved to the output directory, for example `hilbert8-001.png`.
 - Grid overlays are enabled by default; disable them with `--no-grid`.
 - Change the slicing axis with `--axis x`, `--axis y`, or `--axis z`.
+- LDraw output is optional: `--ldr-output output/hilbert.ldr`.
+- LDraw uses 2x2, 2x4, 2x6, and 2x2x3 bricks (parts 3003, 3001, 2456, 30145).
 
 ## Testing
 - Run pyflakes: `tests/run_pyflakes.sh`

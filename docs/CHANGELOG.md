@@ -7,3 +7,5 @@
 - Expand `README.md` with usage and output details.
 - Add `tests/run_pyflakes.sh` and `tests/smoke_test.sh`.
 - Update legacy scripts to Python 3 print syntax for pyflakes.
+- Split helpers into `hilbert_curve_brick/` modules and add LDraw output support.
+- Import `hilbert_curve_brick` as `hcb` in the entrypoint.
