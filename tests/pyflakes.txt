@@ -1,0 +1,6 @@
+/Users/vosslab/nsh/hilbert-curve-brick/hilbert.py:227:2: Missing parentheses in call to 'print'. Did you mean print(...)?
+	print dim, scale
+	^
+/Users/vosslab/nsh/hilbert-curve-brick/lego_hilbert.py:129:2: Missing parentheses in call to 'print'. Did you mean print(...)?
+	print "maxdim=", maxdim
+	^

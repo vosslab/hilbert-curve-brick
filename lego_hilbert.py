@@ -126,7 +126,7 @@ def child_start_end( parent_start, parent_end, mask, i ):
 if __name__ == "__main__":
 	dim = 8 #powers of two
 	maxdim = dim*2+1
-	print "maxdim=", maxdim
+	print("maxdim=", maxdim)
 	#maxdim += 4
 	hilb = numpy.zeros((maxdim,maxdim,maxdim))
 	lastcoord = None
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 	scalefactor = math.floor(math.log(800./(2*dim+2))/math.log(2.))
 
 	scale = 2**scalefactor
-	print dim, scale
+	print(dim, scale)
 
 	hilb = ndimage.zoom(hilb, (scale, 1, scale), order=0)
 	name = "hilbert%d"%(dim)

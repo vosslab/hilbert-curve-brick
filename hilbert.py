@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
 	scalefactor = math.floor(math.log(800./(2*dim+2))/math.log(2.))
 	scale = 2**scalefactor
-	print dim, scale
+	print(dim, scale)
 
 	hilb = ndimage.zoom(hilb, scale, order=0)
 	name = "hilbert%d"%(dim)

@@ -14,5 +14,9 @@ Generate 3D Hilbert curve slices for LEGO-compatible brick builds.
 - Grid overlays are enabled by default; disable them with `--no-grid`.
 - Change the slicing axis with `--axis x`, `--axis y`, or `--axis z`.
 
+## Testing
+- Run pyflakes: `tests/run_pyflakes.sh`
+- Run smoke test: `tests/smoke_test.sh`
+
 ## Notes
 - Use power-of-two dimensions (2, 4, 8, 16) for a clean Hilbert path.
