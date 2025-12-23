@@ -9,3 +9,4 @@
 - Update legacy scripts to Python 3 print syntax for pyflakes.
 - Split helpers into `hilbert_curve_brick/` modules and add LDraw output support.
 - Import `hilbert_curve_brick` as `hcb` in the entrypoint.
+- Exclude `legacy/` from pyflakes and lazy-load package submodules.
