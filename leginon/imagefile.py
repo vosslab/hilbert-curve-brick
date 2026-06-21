@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Minimal image helpers for writing PNG slices.
 """

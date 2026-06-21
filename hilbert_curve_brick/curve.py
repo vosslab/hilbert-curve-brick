@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Hilbert curve encode/decode helpers.
 """

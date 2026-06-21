@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 LDraw export helpers.
 """
