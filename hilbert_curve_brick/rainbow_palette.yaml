@@ -3,19 +3,19 @@
 # Edit the hex values here to retune the palette; the runtime reads these literals.
 # Each entry is a 6-digit hex color in #RRGGBB form.
 bands:
-  - "#0000FF"  # band 0  - pure blue (curve start)
-  - "#002AFF"  # band 1
-  - "#0055FF"  # band 2
-  - "#007FFF"  # band 3
-  - "#00AAFF"  # band 4
-  - "#00D4FF"  # band 5
-  - "#00FFFF"  # band 6  - cyan
-  - "#00FFAA"  # band 7
-  - "#00FF55"  # band 8
-  - "#55FF00"  # band 9
-  - "#AAFF00"  # band 10
-  - "#FFD400"  # band 11
-  - "#FFAA00"  # band 12
-  - "#FF5500"  # band 13
-  - "#FF2A00"  # band 14
-  - "#FF0000"  # band 15 - pure red (curve end)
+ - "#720E0F" # band 0 - dark red
+ - "#C91A09" # band 1 - classic red
+ - "#CA4C0B" # band 2 - Reddish Orange
+ - "#FE8A18" # band 3 - Orange
+ - "#F8BB3D" # band 4 - Bright Light Orange
+ - "#F2CD37" # band 5 - Yellow
+ - "#FFF03A" # band 6 - Bright Light Yellow
+ - "#BBE90B" # band 7 - Lime Green
+ - "#4B9F4A" # band 8 - Bright Green
+ - "#237841" # band 9 - Green
+ - "#008F9B" # band 10 - Dark Turquoise
+ - "#36AEBF" # band 11 - Medium Azure
+ - "#078BC9" # band 12 - Dark Azure
+ - "#0055BF" # band 13 - blue
+ - "#3F3691" # band 14 - Dark Purple
+ - "#923978" # band 15 - Magenta (curve end)
