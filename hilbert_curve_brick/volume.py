@@ -77,27 +77,40 @@ def scale_volume(volume: numpy.ndarray, scale: int, scale_y: int) -> numpy.ndarr
 		numpy.ndarray: Scaled volume.
 	"""
 	scales = (scale, scale_y, scale)
-	scaled = scipy.ndimage.zoom(volume, scales, order=0)
+	# Use grid_mode block replication so each base voxel maps to exactly
+	# `scale` output pixels. The default (grid_mode=False) maps by
+	# (n_out-1)/(n_in-1), which stretches the pitch slightly and makes the
+	# fixed-step grid overlay drift onto boxes across the image.
+	scaled = scipy.ndimage.zoom(volume, scales, order=0, grid_mode=True, mode='grid-constant')
 	return scaled
 
 
 #============================================
-def apply_grid_overlay(volume: numpy.ndarray, step: int) -> numpy.ndarray:
+def apply_grid_overlay(volume: numpy.ndarray, step: int, offset: int) -> numpy.ndarray:
 	"""
-	Overlay grid planes on the volume.
+	Overlay grid planes on the volume so each box sits centered in a cell.
+
+	Box voxels are `step` pixels apart (the box pitch). Placing a line every
+	`step` pixels starting at `offset` puts each line halfway between two
+	neighboring box centers, so the boxes land centered inside the cells. With
+	offset = half a box width, the lines fall on the gap centers and never cut
+	through a box.
 
 	Args:
 		volume: Input volume.
-		step: Step size for grid planes.
+		step: Pixel distance between grid lines (the box pitch).
+		offset: Pixel position of the first grid line (half a cell from a center).
 
 	Returns:
 		numpy.ndarray: Volume with grid overlays.
 	"""
 	max_index = min(volume.shape[0], volume.shape[2])
-	grid_count = max_index // step
-	for grid_index in range(1, grid_count):
-		volume[grid_index * step, :, :] = 0.5
-		volume[:, :, grid_index * step] = 0.5
+	# Walk grid lines from the first gap center to the far edge.
+	line = offset
+	while line < max_index:
+		volume[line, :, :] = 0.5
+		volume[:, :, line] = 0.5
+		line += step
 	return volume
 
 

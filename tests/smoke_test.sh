@@ -12,9 +12,7 @@ trap cleanup EXIT
 python3 "${ROOT_DIR}/hilbert-curve-brick.py" \
 	-d 2 \
 	-o "${TEMP_DIR}" \
-	--no-grid \
-	-b 1 \
-	-e 3
+	--no-grid
 
 PNG_COUNT=$(ls "${TEMP_DIR}"/*.png 2>/dev/null | wc -l)
 if [ "${PNG_COUNT}" -lt 1 ]; then

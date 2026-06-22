@@ -14,7 +14,7 @@ Generate 3D Hilbert curve slices for LEGO-compatible brick builds.
 ## Output
 - PNG slices saved to the output directory, for example `hilbert8-001.png`.
 - Grid overlays are enabled by default; disable them with `--no-grid`.
-- Change the slicing axis with `--axis x`, `--axis y`, or `--axis z`.
+- Slices are taken along the y axis.
 - LDraw output is optional: `--ldr-output output/hilbert.ldr`.
 - LDraw uses 2x2, 2x4, 2x6, and 2x2x3 bricks (parts 3003, 3001, 2456, 30145).
 

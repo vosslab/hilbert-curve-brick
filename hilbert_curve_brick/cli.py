@@ -6,6 +6,21 @@ Command-line parsing helpers.
 import argparse
 
 
+# Fixed run settings. These were once CLI flags, but they rarely change between
+# runs, so they live here as named constants instead. The values match the
+# previous argparse defaults so behavior is unchanged. Edit a value here to
+# retune it for every run.
+SCALE_Y = 1            # Y-axis scale factor (1 keeps Y unscaled).
+AXIS = 'y'             # Axis sliced when writing PNG files.
+INVERT = True          # Invert slices so the background is white.
+NORMALIZE = True       # Normalize slice values before saving.
+SLICE_START = 1        # First slice index to save (skips the border slice).
+SLICE_END = -1         # Last slice index, exclusive; -1 means through the end.
+PREFIX = 'hilbert'     # Output filename prefix (joined with the dimension).
+LDR_COLOR = 15         # LDraw color index for emitted bricks.
+LDR_THRESHOLD = 0.5    # Voxel occupancy threshold for LDraw bricks.
+
+
 #============================================
 def parse_args() -> argparse.Namespace:
 	"""
@@ -18,100 +33,36 @@ def parse_args() -> argparse.Namespace:
 		description="Generate 3D Hilbert curve PNG slices for brick layouts."
 	)
 
-	curve_group = parser.add_argument_group("curve options")
-	curve_group.add_argument(
+	# Dimension: cells per axis. Must be a power of two for a clean curve.
+	parser.add_argument(
 		'-d', '--dimension', dest='dimension', type=int, default=8,
-		help='Hilbert dimension per axis (power of two).'
+		help='Hilbert dimension per axis (must be a power of two: 2, 4, 8, 16, ...).'
 	)
-	curve_group.add_argument(
+	# Target size: drives the power-of-two scale that fills roughly this many pixels.
+	parser.add_argument(
 		'-s', '--target-size', dest='target_size', type=int, default=800,
-		help='Target max size used to compute scale.'
+		help='Target max image size used to compute the scale.'
 	)
-	curve_group.add_argument(
-		'-y', '--scale-y', dest='scale_y', type=int, default=1,
-		help='Scale factor for Y axis (default keeps Y unscaled).'
-	)
-
-	output_group = parser.add_argument_group("output options")
-	output_group.add_argument(
+	# Output directory: where the PNG slices are written.
+	parser.add_argument(
 		'-o', '--output-dir', dest='output_dir', type=str, default='output',
 		help='Directory for PNG slices.'
 	)
-	output_group.add_argument(
-		'-p', '--prefix', dest='prefix', type=str, default='hilbert',
-		help='Output filename prefix.'
+	# LDraw output: optional path; when empty, no LDraw file is written.
+	parser.add_argument(
+		'-l', '--ldr-output', dest='ldr_output', type=str, default='',
+		help='Write an LDraw (.ldr) brick file to this path.'
 	)
-	output_group.add_argument(
-		'-a', '--axis', dest='axis', type=str, default='y',
-		choices=('x', 'y', 'z'),
-		help='Axis to slice when saving PNG files.'
-	)
-	output_group.add_argument(
+	# Grid toggle: one concept, two flags. The grid frames each Hilbert cell.
+	parser.add_argument(
 		'-g', '--add-grid', dest='add_grid', action='store_true',
-		help='Overlay grid planes.'
+		help='Overlay grid planes (default).'
 	)
-	output_group.add_argument(
+	parser.add_argument(
 		'-G', '--no-grid', dest='add_grid', action='store_false',
 		help='Do not overlay grid planes.'
 	)
-	output_group.set_defaults(add_grid=True)
-	output_group.add_argument(
-		'-i', '--invert', dest='invert', action='store_true',
-		help='Invert output slices (white background).'
-	)
-	output_group.add_argument(
-		'-I', '--no-invert', dest='invert', action='store_false',
-		help='Do not invert output slices.'
-	)
-	output_group.set_defaults(invert=True)
-	output_group.add_argument(
-		'-n', '--normalize', dest='normalize', action='store_true',
-		help='Normalize slices before saving.'
-	)
-	output_group.add_argument(
-		'-N', '--no-normalize', dest='normalize', action='store_false',
-		help='Save slices without normalization.'
-	)
-	output_group.set_defaults(normalize=True)
-	output_group.add_argument(
-		'-b', '--slice-start', dest='slice_start', type=int, default=1,
-		help='First slice index to save.'
-	)
-	output_group.add_argument(
-		'-e', '--slice-end', dest='slice_end', type=int, default=-1,
-		help='Last slice index (exclusive). Use -1 for the last slice.'
-	)
-	output_group.add_argument(
-		'--write-pngs', dest='write_pngs', action='store_true',
-		help='Write PNG slices.'
-	)
-	output_group.add_argument(
-		'--no-pngs', dest='write_pngs', action='store_false',
-		help='Disable PNG output.'
-	)
-	output_group.set_defaults(write_pngs=True)
-
-	ldr_group = parser.add_argument_group("ldraw options")
-	ldr_group.add_argument(
-		'-l', '--ldr-output', dest='ldr_output', type=str, default='',
-		help='Write LDraw output to this file.'
-	)
-	ldr_group.add_argument(
-		'--ldr-color', dest='ldr_color', type=int, default=15,
-		help='LDraw color index (default 15).'
-	)
-	ldr_group.add_argument(
-		'--ldr-threshold', dest='ldr_threshold', type=float, default=0.5,
-		help='Threshold for voxel occupancy.'
-	)
-	ldr_group.add_argument(
-		'--ldr-scale', dest='ldr_scale', type=int, default=None,
-		help='Override scale for LDraw output.'
-	)
-	ldr_group.add_argument(
-		'--ldr-scale-y', dest='ldr_scale_y', type=int, default=None,
-		help='Override Y scale for LDraw output.'
-	)
+	parser.set_defaults(add_grid=True)
 
 	args = parser.parse_args()
 	return args
@@ -128,8 +79,10 @@ def is_power_of_two(value: int) -> bool:
 	Returns:
 		bool: True when value is a power of two.
 	"""
+	# Reject zero and negatives; powers of two are positive.
 	if value <= 0:
 		return False
+	# A power of two has a single set bit, so value & (value - 1) clears it to 0.
 	is_power = (value & (value - 1)) == 0
 	return is_power
 
@@ -142,15 +95,9 @@ def validate_args(args: argparse.Namespace) -> None:
 	Args:
 		args: Parsed arguments.
 	"""
+	# Dimension must be a power of two so the Hilbert curve fills the cube cleanly.
 	if not is_power_of_two(args.dimension):
-		raise ValueError("dimension must be a power of two")
-	if args.dimension < 1:
-		raise ValueError("dimension must be at least 1")
+		raise ValueError(f"dimension must be a power of two, got {args.dimension}")
+	# Target size must be positive to compute a usable scale.
 	if args.target_size < 1:
-		raise ValueError("target-size must be at least 1")
-	if args.scale_y < 1:
-		raise ValueError("scale-y must be at least 1")
-	if args.ldr_scale is not None and args.ldr_scale < 1:
-		raise ValueError("ldr-scale must be at least 1")
-	if args.ldr_scale_y is not None and args.ldr_scale_y < 1:
-		raise ValueError("ldr-scale-y must be at least 1")
+		raise ValueError(f"target-size must be at least 1, got {args.target_size}")
