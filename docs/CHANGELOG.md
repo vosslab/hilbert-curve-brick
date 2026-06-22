@@ -2,6 +2,11 @@
 
 ## 2026-06-21
 
+### Additions and New Features
+- Add `docs/CODE_ARCHITECTURE.md` (module map and data flow) and `docs/FILE_STRUCTURE.md` (repository layout).
+- Add `docs/INSTALL.md` (requirements, setup, verify step) and `docs/USAGE.md` (CLI flags and examples).
+- Add `docs/TROUBLESHOOTING.md` (validation errors, missing deps, LDraw output) and `docs/OUTPUT_FORMATS.md` (PNG slice naming and LDraw line format).
+
 ### Behavior or Interface Changes
 - Trim the CLI to five option concepts (`--dimension`, `--target-size`, `--output-dir`, `--ldr-output`, grid toggle). Move `scale-y`, `axis`, `invert`, `normalize`, `slice-start`, `slice-end`, `prefix`, and the LDraw color/threshold/scale flags to named constants in `hilbert_curve_brick/cli.py` preserving prior defaults. Remove `write-pngs`/`no-pngs`; PNG slices are now always written.
 - State the power-of-two requirement in `--dimension` help and name the offending value in the validation error.
@@ -15,6 +20,8 @@
 - Remove unused vendored `leginon/mrc.py` (imported nowhere; depended on absent `pyami.*` modules).
 
 ### Developer Tests and Notes
+- Rewrite `README.md`: longer About paragraph (246 chars, near the 250 limit), a Documentation section linking the new `docs/` set, and a corrected Testing section (`pytest tests/` and `tests/smoke_test.sh`, replacing the stale `tests/run_pyflakes.sh` reference).
+- Correct `AGENTS.md` to reference `tests/smoke_test.sh` and the pytest lint gates instead of nonexistent pyflakes/mypy runner scripts.
 - Add `tests/test_grid_alignment.py` (grid lines never cut squares, each square maps to one cell, consistent spacing via exact block replication) and `tests/test_cli_validation.py` (power-of-two validation).
 
 ## 2025-12-23

@@ -3,7 +3,7 @@ See Python coding style in docs/PYTHON_STYLE.md.
 See Markdown style in docs/MARKDOWN_STYLE.md.
 See repo style in docs/REPO_STYLE.md.
 When making edits, document them in docs/CHANGELOG.md.
-Agents may run programs in the tests folder, including smoke tests and pyflakes/mypy runner scripts.
+Agents may run programs in the tests folder, including `tests/smoke_test.sh` and the pytest lint gates (run with `pytest tests/`).
 
 ## Environment
 Codex must run Python using `/opt/homebrew/opt/python@3.12/bin/python3.12` (use Python 3.12 only).
