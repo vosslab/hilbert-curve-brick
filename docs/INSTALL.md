@@ -8,7 +8,7 @@ runs from the repo root.
 
 - Python 3.12 (the pinned interpreter for this repo's tooling).
 - Python packages from [pip_requirements.txt](../pip_requirements.txt): `numpy`,
-  `pillow`, `pyflakes`, `scipy`.
+  `pillow`, `pyflakes`, `pyyaml`, `scipy`.
 - Homebrew `python@3.12` on macOS, per the [Brewfile](../Brewfile).
 
 ## Install steps

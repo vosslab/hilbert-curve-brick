@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "hilbert-curve-brick"
+version = "26.06"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "pillow",
+    "pyyaml",
+    "scipy",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hilbert_curve_brick*"]
+
+[tool.setuptools.package-data]
+hilbert_curve_brick = ["*.yaml"]

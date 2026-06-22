@@ -12,19 +12,19 @@ import argparse
 # retune it for every run.
 SCALE_Y = 1            # Y-axis scale factor (1 keeps Y unscaled).
 AXIS = 'y'             # Axis sliced when writing PNG files.
-INVERT = True          # Invert slices so the background is white.
-NORMALIZE = True       # Normalize slice values before saving.
 SLICE_START = 1        # First slice index to save (skips the border slice).
 SLICE_END = -1         # Last slice index, exclusive; -1 means through the end.
 PREFIX = 'hilbert'     # Output filename prefix (joined with the dimension).
 LDR_COLOR = 15         # LDraw color index for emitted bricks.
-LDR_THRESHOLD = 0.5    # Voxel occupancy threshold for LDraw bricks.
 
 
 #============================================
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list | None = None) -> argparse.Namespace:
 	"""
 	Parse command-line arguments.
+
+	Args:
+		argv: Argument list; None reads from sys.argv (default).
 
 	Returns:
 		argparse.Namespace: Parsed arguments.
@@ -63,8 +63,18 @@ def parse_args() -> argparse.Namespace:
 		help='Do not overlay grid planes.'
 	)
 	parser.set_defaults(add_grid=True)
+	# Color toggle: one concept, two flags. Default is mono (black and white).
+	parser.add_argument(
+		'-c', '--color', dest='color', action='store_true',
+		help='Render curve in 16-band rainbow color.'
+	)
+	parser.add_argument(
+		'-C', '--mono', dest='color', action='store_false',
+		help='Render curve in mono (default).'
+	)
+	parser.set_defaults(color=False)
 
-	args = parser.parse_args()
+	args = parser.parse_args(argv)
 	return args
 
 

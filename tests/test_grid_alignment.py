@@ -4,10 +4,10 @@ Grid alignment tests.
 scale_volume uses grid_mode block replication, so each base voxel maps to
 exactly `scale` output pixels and a scaled column c comes from base index
 c // scale. Box voxels (Hilbert curve points) sit on odd base indices; even
-base indices are gaps. The entrypoint draws grid planes every scale*2 pixels
-(the box pitch) starting at offset scale//2, which places each line halfway
-between neighboring box centers so every black square sits centered in its
-cell. Centering only holds when the zoom replicates exactly.
+base indices are gaps. grid_params returns (step, offset) where step = scale*2
+(the box pitch) and offset = scale//2, placing each grid line halfway between
+neighboring box centers so every box sits centered in its cell. Centering only
+holds when the zoom replicates exactly.
 """
 
 # PIP3 modules
@@ -17,8 +17,8 @@ import pytest
 # local repo modules
 import hilbert_curve_brick.volume
 
-GRID_VALUE = 0.5
-BOX_VALUE = 1.0
+# Occupied voxels in the integer model are label > 0.
+BOX_LABEL = 1
 
 # A small scale keeps the test cheap; the centering property holds for any
 # scale because scale_volume replicates each base voxel by exactly `scale`.
@@ -42,9 +42,10 @@ def build_scaled(dimension: int) -> tuple[numpy.ndarray, int]:
 		tuple: (scaled_volume, scale) for the requested dimension.
 	"""
 	base_size = dimension * 2 + 1
-	base = numpy.zeros((base_size, base_size, base_size), dtype=numpy.float32)
+	# Use integer dtype matching the new model.
+	base = numpy.zeros((base_size, base_size, base_size), dtype=numpy.int32)
 	# Boxes occupy odd base indices along axis 0, gaps are even (matches the curve).
-	base[1::2, :, :] = BOX_VALUE
+	base[1::2, :, :] = BOX_LABEL
 	scaled = hilbert_curve_brick.volume.scale_volume(base, TEST_SCALE, TEST_SCALE)
 	return scaled, TEST_SCALE
 
@@ -60,7 +61,7 @@ def box_runs(scaled: numpy.ndarray) -> list[tuple[int, int]]:
 	Returns:
 		list: Contiguous box-column spans.
 	"""
-	box_cols = numpy.where(numpy.any(scaled >= BOX_VALUE, axis=(1, 2)))[0]
+	box_cols = numpy.where(numpy.any(scaled > 0, axis=(1, 2)))[0]
 	runs = []
 	start = None
 	prev = None
@@ -80,7 +81,7 @@ def box_runs(scaled: numpy.ndarray) -> list[tuple[int, int]]:
 #============================================
 def grid_columns(scaled_size: int, step: int, offset: int) -> list[int]:
 	"""
-	Compute the grid plane indices the overlay would draw.
+	Compute the grid plane indices the mask would mark.
 
 	Args:
 		scaled_size: Size of the scaled axis.
@@ -103,8 +104,8 @@ def test_scale_volume_replicates_each_base_voxel_exactly() -> None:
 	"""
 	scale_volume maps base voxel (z, y, x) to a solid scale-sized block.
 	"""
-	# Distinct values so any drift in the mapping shows up immediately.
-	base = numpy.arange(2 * 2 * 2, dtype=numpy.float32).reshape((2, 2, 2))
+	# Distinct integer values so any drift in the mapping shows up immediately.
+	base = numpy.arange(2 * 2 * 2, dtype=numpy.int32).reshape((2, 2, 2))
 	scale = 3
 	scale_y = 2
 	scaled = hilbert_curve_brick.volume.scale_volume(base, scale, scale_y)
@@ -117,13 +118,14 @@ def test_scale_volume_replicates_each_base_voxel_exactly() -> None:
 @pytest.mark.parametrize("dimension", [2, 4, 8])
 def test_grid_lines_do_not_cut_boxes(dimension: int) -> None:
 	"""
-	No grid line passes through an occupied black-square column.
+	No grid line passes through an occupied box column.
 	"""
 	scaled, scale = build_scaled(dimension)
-	columns = grid_columns(scaled.shape[0], scale * 2, scale // 2)
+	step, offset = hilbert_curve_brick.volume.grid_params(scale)
+	columns = grid_columns(scaled.shape[0], step, offset)
 	# A grid line column must carry no box pixel, so squares stay readable.
 	for column in columns:
-		assert not numpy.any(scaled[column, :, :] >= BOX_VALUE)
+		assert not numpy.any(scaled[column, :, :] > 0)
 
 
 #============================================
@@ -133,7 +135,8 @@ def test_each_box_sits_in_one_cell(dimension: int) -> None:
 	Every box run falls between two adjacent grid lines (one cell).
 	"""
 	scaled, scale = build_scaled(dimension)
-	columns = grid_columns(scaled.shape[0], scale * 2, scale // 2)
+	step, offset = hilbert_curve_brick.volume.grid_params(scale)
+	columns = grid_columns(scaled.shape[0], step, offset)
 	for start, end in box_runs(scaled):
 		# The lines immediately bounding the box define its single cell. Default
 		# to the image edges so a box at the border does not raise on an empty
@@ -147,14 +150,29 @@ def test_each_box_sits_in_one_cell(dimension: int) -> None:
 
 #============================================
 @pytest.mark.parametrize("dimension", [2, 4, 8])
-def test_overlay_marks_grid_columns(dimension: int) -> None:
+def test_grid_mask_marks_grid_columns(dimension: int) -> None:
 	"""
-	apply_grid_overlay writes the grid value onto each grid plane.
+	build_grid_mask marks True on each grid plane along axis 0 and axis 2.
 	"""
 	scaled, scale = build_scaled(dimension)
-	step = scale * 2
-	offset = scale // 2
+	step, offset = hilbert_curve_brick.volume.grid_params(scale)
 	columns = grid_columns(scaled.shape[0], step, offset)
-	overlaid = hilbert_curve_brick.volume.apply_grid_overlay(scaled.copy(), step, offset)
+	mask = hilbert_curve_brick.volume.build_grid_mask(scaled.shape, step, offset)
 	for column in columns:
-		assert numpy.all(overlaid[column, :, :] == GRID_VALUE)
+		# Every voxel on a grid plane along axis 0 must be True in the mask.
+		assert numpy.all(mask[column, :, :])
+
+
+#============================================
+@pytest.mark.parametrize("dimension", [2, 4, 8])
+def test_grid_mask_marks_axis2_columns(dimension: int) -> None:
+	"""
+	build_grid_mask marks True on grid planes along axis 2 as well.
+	"""
+	scaled, scale = build_scaled(dimension)
+	step, offset = hilbert_curve_brick.volume.grid_params(scale)
+	columns = grid_columns(scaled.shape[2], step, offset)
+	mask = hilbert_curve_brick.volume.build_grid_mask(scaled.shape, step, offset)
+	for column in columns:
+		# Every voxel on a grid plane along axis 2 must be True in the mask.
+		assert numpy.all(mask[:, :, column])

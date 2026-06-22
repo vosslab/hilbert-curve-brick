@@ -61,7 +61,7 @@ def _array_to_image(numer: numpy.ndarray) -> "PIL.Image.Image":
 
 
 #============================================
-def arrayToPng(
+def array_to_png(
 		numer: numpy.ndarray,
 		filename: str,
 		normalize: bool = True,
@@ -81,22 +81,3 @@ def arrayToPng(
 	if msg:
 		print(f"writing PNG: {filename}")
 	image.save(filename, "PNG")
-
-
-#============================================
-def array_to_png(
-		numer: numpy.ndarray,
-		filename: str,
-		normalize: bool = True,
-		msg: bool = True
-	) -> None:
-	"""
-	Snake-case wrapper for arrayToPng.
-
-	Args:
-		numer: Input array.
-		filename: Output path.
-		normalize: Normalize array before saving.
-		msg: Print a status line.
-	"""
-	arrayToPng(numer, filename, normalize=normalize, msg=msg)

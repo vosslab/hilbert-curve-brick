@@ -8,7 +8,7 @@ docs, and generated output quickly.
 ```text
 hilbert-curve-brick/
 +- hilbert-curve-brick.py   entry point: build volume, write PNGs and LDraw
-+- hilbert_curve_brick/     core package (CLI, curve math, volume, LDraw)
++- hilbert_curve_brick/     core package (CLI, curve math, volume, LDraw, color)
 +- leginon/                 minimal PNG writer helper
 +- legacy/                  old standalone scripts, kept for reference
 +- devel/                   maintenance scripts (version bump, changelog tools)
@@ -20,6 +20,7 @@ hilbert-curve-brick/
 +- pip_requirements.txt     runtime dependencies
 +- pip_requirements-dev.txt developer dependencies
 +- Brewfile                 Homebrew dependencies
++- pyproject.toml           package metadata and version (single source of truth)
 +- source_me.sh             shell bootstrap for running Python
 +- REPO_TYPE                repo type marker (python)
 +- VERSION                  version string, synced with releases
@@ -30,9 +31,11 @@ hilbert-curve-brick/
 
 - [hilbert_curve_brick/](../hilbert_curve_brick): the importable package.
   - [cli.py](../hilbert_curve_brick/cli.py): argparse and validation, run constants.
+  - [color.py](../hilbert_curve_brick/color.py): palette loading, band mapping, and LDraw direct-color conversion.
   - [curve.py](../hilbert_curve_brick/curve.py): Hilbert index/coordinate math.
   - [volume.py](../hilbert_curve_brick/volume.py): volume build, scale, grid, PNG slices.
   - [ldraw.py](../hilbert_curve_brick/ldraw.py): LDraw brick tiling and output.
+  - [rainbow_palette.yaml](../hilbert_curve_brick/rainbow_palette.yaml): 16-band rainbow palette (hex entries).
 - [tests/](../tests): fast pytest modules (`test_*.py`), repo-wide lint checks,
   shared [file_utils.py](../tests/file_utils.py), and
   [smoke_test.sh](../tests/smoke_test.sh).

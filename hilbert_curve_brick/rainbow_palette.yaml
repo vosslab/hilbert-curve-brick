@@ -1,0 +1,21 @@
+# 16-band rainbow palette for the Hilbert curve color display.
+# Colors are ordered blue to red (jet-like), matching the curve start to end.
+# Edit the hex values here to retune the palette; the runtime reads these literals.
+# Each entry is a 6-digit hex color in #RRGGBB form.
+bands:
+  - "#0000FF"  # band 0  - pure blue (curve start)
+  - "#002AFF"  # band 1
+  - "#0055FF"  # band 2
+  - "#007FFF"  # band 3
+  - "#00AAFF"  # band 4
+  - "#00D4FF"  # band 5
+  - "#00FFFF"  # band 6  - cyan
+  - "#00FFAA"  # band 7
+  - "#00FF55"  # band 8
+  - "#55FF00"  # band 9
+  - "#AAFF00"  # band 10
+  - "#FFD400"  # band 11
+  - "#FFAA00"  # band 12
+  - "#FF5500"  # band 13
+  - "#FF2A00"  # band 14
+  - "#FF0000"  # band 15 - pure red (curve end)

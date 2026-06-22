@@ -156,4 +156,4 @@ if __name__ == "__main__":
 	for j in range(1, maxdim-1):
 		image = 1 - hilb[:,j,:]
 		name = "hilbert%d-%03d.png"%(dim, j)
-		imagefile.arrayToPng(image, name)
+		imagefile.array_to_png(image, name)

@@ -17,7 +17,8 @@ and how to resolve them. Each item below is tied to repo behavior.
 
 ## Missing dependencies
 
-- Symptom: `ModuleNotFoundError` for `numpy`, `scipy`, or `PIL`.
+- Symptom: `ModuleNotFoundError` for `numpy`, `scipy`, `PIL`, or `yaml`
+  (installed as `pyyaml`).
 - Cause: runtime dependencies are not installed.
 - Fix: `pip3 install -r pip_requirements.txt`. See
   [docs/INSTALL.md](INSTALL.md).

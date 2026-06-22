@@ -20,8 +20,14 @@ Generate 3D Hilbert curve PNG slices and optional LDraw brick models for LEGO-co
 - PNG slices saved to the output directory, for example `hilbert8-001.png`.
 - Slices are taken along the y axis.
 - Grid overlays are enabled by default; disable them with `--no-grid`.
+- Mono output (default) renders the curve black on a white background.
+- Color output (`--color`) renders the curve in 16 rainbow bands from curve start
+  to end; band colors are editable in
+  [hilbert_curve_brick/rainbow_palette.yaml](hilbert_curve_brick/rainbow_palette.yaml).
 - LDraw output is optional: `--ldr-output output/hilbert.ldr`.
 - LDraw uses 2x2, 2x4, 2x6, and 2x2x3 bricks (parts 3003, 3001, 2456, 30145).
+- In color mode LDraw bricks use direct-color codes (`0x2RRGGBB`) matching the
+  PNG palette.
 
 ## Testing
 
